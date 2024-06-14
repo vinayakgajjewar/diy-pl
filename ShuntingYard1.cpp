@@ -75,5 +75,44 @@ int main()
         std::cout << s.symbol;
     }
     std::cout << std::endl;
+    std::deque<double> stkSolve;
+    for (const auto &inst : stkOutput)
+    {
+        switch (inst.type)
+        {
+            case sSymbol::Type::Literal_Numeric:
+            {
+                stkSolve.push_front(std::stod(inst.symbol));
+                break;
+            }
+            case sSymbol::Type::Operator:
+            {
+                std::vector<double> mem(inst.op.arguments);
+                for (uint8_t a = 0; a < inst.op.arguments; a++)
+                {
+                    if (stkSolve.empty())
+                    {
+                        std::cout << "error bad expression" << std::endl;
+                    }
+                    else
+                    {
+                        mem[a] = stkSolve[0];
+                        stkSolve.pop_front();
+                    }
+                }
+                double result = 0.0;
+                if (inst.op.arguments == 2)
+                {
+                    if (inst.symbol[0] == '/') result = mem[1] / mem[0];
+                    if (inst.symbol[0] == '*') result = mem[1] * mem[0];
+                    if (inst.symbol[0] == '+') result = mem[1] + mem[0];
+                    if (inst.symbol[0] == '-') result = mem[1] - mem[0];
+                }
+                stkSolve.push_front(result);
+                break;
+            }
+        }
+    }
+    std::cout << "result=" << std::to_string(stkSolve[0]) << std::endl;
     return 0;
 }

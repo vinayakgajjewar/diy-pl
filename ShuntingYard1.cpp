@@ -16,7 +16,7 @@ int main()
     mapOps['*'] = {3, 2};
     mapOps['+'] = {2, 2};
     mapOps['-'] = {1, 2};
-    std::string sExpression = "1+2*4-3";
+    std::string sExpression = "(1+2)*(4-3)";
     struct sSymbol
     {
         std::string symbol = "";
@@ -24,7 +24,9 @@ int main()
         {
             Unknown,
             Literal_Numeric,
-            Operator
+            Operator,
+            Parenthesis_Open,
+            Parenthesis_Close
         } type = Type::Unknown;
         sOperator op;
     };
@@ -32,16 +34,41 @@ int main()
     std::deque<sSymbol> stkOutput;
     for (const char c : sExpression)
     {
-        if (std::isdigit(c))
-        {
+        if (std::isdigit(c)) {
             stkOutput.push_back({
                 std::string(1, c),
                 sSymbol::Type::Literal_Numeric
             });
+        } else if (c == '(') {
+            // Push the open parenthesis to the holding stack. It will act as a
+            // stopper when we back-track.
+            stkHolding.push_front({
+                std::string(1, c),
+                sSymbol::Type::Parenthesis_Open
+            });
+        } else if (c == ')')
+        {
+            // Drain the holding stack until we reach an open parenthesis.
+            while (!stkHolding.empty() && stkHolding.front().type != sSymbol::Type::Parenthesis_Open)
+            {
+                stkOutput.push_back(stkHolding.front());
+                stkHolding.pop_front();
+            }
+            // Check for mismatched parentheses.
+            if (stkHolding.empty())
+            {
+                std::cout << "error unexpected parenthesis" << std::endl;
+                return 0;
+            }
+            // Remove the matching open parenthesis from the holding stack.
+            if (!stkHolding.empty() && stkHolding.front().type == sSymbol::Type::Parenthesis_Open)
+            {
+                stkHolding.pop_front();
+            }
         } else if (mapOps.contains(c))
         {
             const auto &new_op = mapOps[c];
-            while (!stkHolding.empty())
+            while (!stkHolding.empty() && stkHolding.front().type != sSymbol::Type::Parenthesis_Open)
             {
                 if (stkHolding.front().type == sSymbol::Type::Operator)
                 {
